@@ -16,8 +16,7 @@ func RegisterRoutes(
 	mux.Get("/live", Health)
 
 	mux.Route("/v1", func(r chi.Router) {
-		r.Post("/wallet/{id}/withdraw", httpv1.WithdrawFromWalletHandler(log, walletService))
-		r.Post("/wallet/{id}/deposit", httpv1.DepositInWalletHandler(log, walletService))
+		r.Post("/wallet/{id}/transaction", httpv1.TransactionInWalletHandler(log, walletService))
 		r.Get("/wallet/{id}", httpv1.GetWalletHandler(log, walletService))
 		r.Post("/wallet", httpv1.CreateWalletHandler(log, walletService))
 	})

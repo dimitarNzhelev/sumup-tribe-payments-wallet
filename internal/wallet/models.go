@@ -15,8 +15,9 @@ type WalletStruct struct {
 }
 
 type WalletRequest struct {
-	Balance float64 `json:"balance"`
-	Amount  float64 `json:"amount"`
+	Balance         float64 `json:"balance"`
+	Amount          float64 `json:"amount"`
+	TransactionType string  `json:"transaction_type"`
 }
 
 type WalletResponse struct {

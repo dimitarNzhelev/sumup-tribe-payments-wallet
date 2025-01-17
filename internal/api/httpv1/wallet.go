@@ -92,11 +92,11 @@ func GetWalletHandler(log logger.StructuredLogger, walletService *walletModule.W
 	}
 }
 
-func DepositInWalletHandler(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
+func TransactionInWalletHandler(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		log.Info("DepositInWalletHandler")
+		log.Info("TransactionInWalletHandler")
 
 		// Get the wallet ID from the URL
 		id := chi.URLParam(r, "id")
@@ -118,60 +118,17 @@ func DepositInWalletHandler(log logger.StructuredLogger, walletService *walletMo
 		// Convert the amount to cents
 		amount := int64(req.Amount * 100)
 
-		// Call the service to deposit in the wallet
-		err = walletService.DepositInWallet(r.Context(), amount, wallet)
+		if req.TransactionType == "withdraw" {
+			err = walletService.WithdrawFromWallet(r.Context(), amount, wallet)
+		} else if req.TransactionType == "deposit" {
+			err = walletService.DepositInWallet(r.Context(), amount, wallet)
+		} else {
+			http.Error(w, "Invalid transaction type", http.StatusBadRequest)
+			return
+		}
 
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error depositing in wallet: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusOK)
-		response := walletModule.WalletResponse{
-			WalletID:  wallet.WalletID,
-			Balance:   float64(wallet.Balance) / 100.0,
-			Version:   wallet.Version,
-			CreatedAt: wallet.CreatedAt,
-			UpdatedAt: wallet.UpdatedAt,
-		}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-func WithdrawFromWalletHandler(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		log.Info("WithdrawFromWalletHandler")
-
-		// Get the wallet ID from the URL
-		id := chi.URLParam(r, "id")
-		if id == "" {
-			http.Error(w, ErrWalledIDEmpty.Error(), http.StatusBadRequest)
-			return
-		}
-
-		//Get the amount from the request body
-		var req walletModule.WalletRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			http.Error(w, ErrInvalidPayload.Error(), http.StatusBadRequest)
-			return
-		}
-
-		wallet, err := walletService.GetWallet(r.Context(), id)
-
-		// Convert the amount to cents
-		amount := int64(req.Amount * 100)
-
-		// Call the service to deposit in the wallet
-		err = walletService.WithdrawFromWallet(r.Context(), amount, wallet)
-
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error withdrawing from wallet: %s", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Error %s in wallet: %s", req.TransactionType, err), http.StatusInternalServerError)
 			return
 		}
 
