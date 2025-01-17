@@ -2,11 +2,18 @@ package cmd
 
 import (
 	"context"
+	"database/sql"
+	"fmt"
+
+	_ "github.com/lib/pq"
 
 	"tribe-payments-wallet-golang-interview-assignment/internal/api"
 	"tribe-payments-wallet-golang-interview-assignment/internal/config"
 	"tribe-payments-wallet-golang-interview-assignment/internal/http"
+	"tribe-payments-wallet-golang-interview-assignment/internal/transactions"
+	"tribe-payments-wallet-golang-interview-assignment/internal/wallet"
 
+	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/chi/v5"
 	"github.com/spf13/cobra"
 	"github.com/sumup-oss/go-pkgs/errors"
@@ -49,7 +56,35 @@ func NewApiCmd(osExecutor os.OsExecutor) *cobra.Command {
 				cfg.GracefulShutdownTimeout,
 			)
 
+			connectionString := fmt.Sprintf(
+				"postgres://%s:%s@%s/%s?sslmode=%s",
+				cfg.Database.Username,
+				cfg.Database.Password,
+				cfg.Database.Host,
+				cfg.Database.Database,
+				cfg.Database.SSLMode,
+			)
+
+			log.Info(fmt.Sprintf("Connecting to database: %s", connectionString))
+
+			db, err := sql.Open("postgres", connectionString)
+			if err != nil {
+				errors.New(fmt.Sprintf("Failed to connect to database: %s", err))
+			}
+			defer db.Close()
+
+			err = db.Ping()
+			if err != nil {
+				errors.New(fmt.Sprintf("Failed to ping database: %s", err))
+			}
+
+			walletRepo := wallet.NewPostgresWalletRepo(db)
+			transactionRepo := transactions.NewPostgresTransactionRepo(db)
+			transactionService := transactions.NewTransactionService(transactionRepo)
+			walletService := wallet.NewWalletService(walletRepo, transactionService)
+
 			mux := chi.NewRouter()
+			mux.Use(middleware.StripSlashes)
 			mux.Use(
 				http.Recovery(
 					log,
@@ -64,7 +99,7 @@ func NewApiCmd(osExecutor os.OsExecutor) *cobra.Command {
 				),
 			)
 
-			api.RegisterRoutes(mux, log)
+			api.RegisterRoutes(mux, log, walletService)
 
 			httpServer := http.NewServer(
 				log,
