@@ -8,7 +8,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/sumup-oss/go-pkgs/errors"
 	"github.com/sumup-oss/go-pkgs/logger"
+)
+
+var (
+	ErrInvalidPayload = errors.New("Invalid payload")
+	ErrWalledIDEmpty  = errors.New("Wallet ID is required")
 )
 
 func CreateWalletHandler(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
@@ -20,7 +26,7 @@ func CreateWalletHandler(log logger.StructuredLogger, walletService *walletModul
 		var req walletModule.WalletRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
+			http.Error(w, ErrInvalidPayload.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -59,7 +65,7 @@ func GetWalletHandler(log logger.StructuredLogger, walletService *walletModule.W
 		// Get the wallet ID from the URL
 		id := chi.URLParam(r, "id")
 		if id == "" {
-			http.Error(w, "Wallet ID is required", http.StatusBadRequest)
+			http.Error(w, ErrWalledIDEmpty.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -71,7 +77,7 @@ func GetWalletHandler(log logger.StructuredLogger, walletService *walletModule.W
 		}
 
 		// Set status and write the response as JSON
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusOK)
 		response := walletModule.WalletResponse{
 			WalletID:  wallet.WalletID,
 			Balance:   float64(wallet.Balance) / 100.0,
@@ -95,7 +101,7 @@ func DepositInWalletHandler(log logger.StructuredLogger, walletService *walletMo
 		// Get the wallet ID from the URL
 		id := chi.URLParam(r, "id")
 		if id == "" {
-			http.Error(w, "Wallet ID is required", http.StatusBadRequest)
+			http.Error(w, ErrWalledIDEmpty.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -103,7 +109,7 @@ func DepositInWalletHandler(log logger.StructuredLogger, walletService *walletMo
 		var req walletModule.WalletRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid request payload: %s", err), http.StatusBadRequest)
+			http.Error(w, ErrInvalidPayload.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -120,7 +126,7 @@ func DepositInWalletHandler(log logger.StructuredLogger, walletService *walletMo
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusOK)
 		response := walletModule.WalletResponse{
 			WalletID:  wallet.WalletID,
 			Balance:   float64(wallet.Balance) / 100.0,
@@ -144,7 +150,7 @@ func WithdrawFromWalletHandler(log logger.StructuredLogger, walletService *walle
 		// Get the wallet ID from the URL
 		id := chi.URLParam(r, "id")
 		if id == "" {
-			http.Error(w, "Wallet ID is required", http.StatusBadRequest)
+			http.Error(w, ErrWalledIDEmpty.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -152,7 +158,7 @@ func WithdrawFromWalletHandler(log logger.StructuredLogger, walletService *walle
 		var req walletModule.WalletRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid request payload: %s", err), http.StatusBadRequest)
+			http.Error(w, ErrInvalidPayload.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -169,7 +175,7 @@ func WithdrawFromWalletHandler(log logger.StructuredLogger, walletService *walle
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
+		w.WriteHeader(http.StatusOK)
 		response := walletModule.WalletResponse{
 			WalletID:  wallet.WalletID,
 			Balance:   float64(wallet.Balance) / 100.0,

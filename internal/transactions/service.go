@@ -6,6 +6,10 @@ import (
 	"github.com/sumup-oss/go-pkgs/errors"
 )
 
+var (
+	ErrTransactionNotFound = errors.New("Transaction not found")
+)
+
 type TransactionService struct {
 	repo TransactionRepo
 }
@@ -16,7 +20,7 @@ func NewTransactionService(repo TransactionRepo) *TransactionService {
 
 func (s *TransactionService) CreateTransaction(ctx context.Context, transaction *TransactionStruct) error {
 	if transaction == nil {
-		return errors.New("Transaction is nil")
+		return ErrTransactionNotFound
 	}
 
 	err := s.repo.CreateTransaction(ctx, transaction)

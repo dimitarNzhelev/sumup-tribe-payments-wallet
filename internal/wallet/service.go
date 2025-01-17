@@ -7,6 +7,15 @@ import (
 	"github.com/sumup-oss/go-pkgs/errors"
 )
 
+var (
+	ErrWalletNotFound    = errors.New("Wallet not found")
+	ErrBalanceNegative   = errors.New("Balance cannot be negative")
+	ErrWalledIDEmpty     = errors.New("Wallet ID is empty")
+	ErrDepositNegative   = errors.New("Deposit amount must be positive")
+	ErrWithdrawalZero    = errors.New("Withdrawal amount must be positive")
+	ErrInsufficientFunds = errors.New("Insufficient funds")
+)
+
 type WalletService struct {
 	repo                WalletRepo
 	transactionsService *transactions.TransactionService
@@ -18,11 +27,11 @@ func NewWalletService(repo WalletRepo, transactionsService *transactions.Transac
 
 func (s *WalletService) CreateWallet(ctx context.Context, wallet *WalletStruct) (*WalletStruct, error) {
 	if wallet == nil {
-		return nil, errors.New("Wallet is nil")
+		return nil, ErrWalletNotFound
 	}
 
 	if wallet.Balance < 0 {
-		return nil, errors.New("Balance cannot be negative")
+		return nil, ErrBalanceNegative
 	}
 
 	wallet, err := s.repo.CreateWallet(ctx, wallet)
@@ -34,7 +43,7 @@ func (s *WalletService) CreateWallet(ctx context.Context, wallet *WalletStruct) 
 
 func (s *WalletService) GetWallet(ctx context.Context, id string) (*WalletStruct, error) {
 	if id == "" {
-		return nil, errors.New("Wallet ID is empty")
+		return nil, ErrWalledIDEmpty
 	}
 
 	wallet, err := s.repo.GetWallet(ctx, id)
@@ -46,7 +55,7 @@ func (s *WalletService) GetWallet(ctx context.Context, id string) (*WalletStruct
 
 func (s *WalletService) updateWallet(ctx context.Context, wallet *WalletStruct) error {
 	if wallet == nil {
-		return errors.New("Wallet is nil")
+		return ErrWalletNotFound
 	}
 
 	err := s.repo.UpdateWallet(ctx, wallet)
@@ -59,11 +68,11 @@ func (s *WalletService) updateWallet(ctx context.Context, wallet *WalletStruct) 
 
 func (s *WalletService) DepositInWallet(ctx context.Context, money int64, wallet *WalletStruct) error {
 	if money <= 0 {
-		return errors.New("Deposit amount must be positive")
+		return ErrDepositNegative
 	}
 
 	if wallet == nil {
-		return errors.New("Wallet not found")
+		return ErrWalletNotFound
 	}
 
 	wallet.Balance += money
@@ -89,15 +98,15 @@ func (s *WalletService) DepositInWallet(ctx context.Context, money int64, wallet
 
 func (s *WalletService) WithdrawFromWallet(ctx context.Context, money int64, wallet *WalletStruct) error {
 	if wallet == nil {
-		return errors.New("Wallet not found")
+		return ErrWalletNotFound
 	}
 
 	if money <= 0 {
-		return errors.New("Withdrawal amount must be positive")
+		return ErrWithdrawalZero
 	}
 
 	if wallet.Balance < money {
-		return errors.New("Insufficient funds")
+		return ErrInsufficientFunds
 	}
 	wallet.Balance -= money
 
