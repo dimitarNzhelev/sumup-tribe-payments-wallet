@@ -21,6 +21,11 @@ func (s *WalletService) CreateWallet(ctx context.Context, wallet *WalletStruct) 
 	if wallet == nil {
 		return nil, errors.New("Wallet is nil")
 	}
+
+	if wallet.Balance < 0 {
+		return nil, errors.New("Balance cannot be negative")
+	}
+
 	wallet, err := s.repo.CreateWallet(ctx, wallet)
 	if err != nil {
 		return nil, err
@@ -29,6 +34,10 @@ func (s *WalletService) CreateWallet(ctx context.Context, wallet *WalletStruct) 
 }
 
 func (s *WalletService) GetWallet(ctx context.Context, id string) (*WalletStruct, error) {
+	if id == "" {
+		return nil, errors.New("Wallet ID is empty")
+	}
+
 	wallet, err := s.repo.GetWallet(ctx, id)
 	if err != nil {
 		return nil, err
@@ -37,6 +46,10 @@ func (s *WalletService) GetWallet(ctx context.Context, id string) (*WalletStruct
 }
 
 func (s *WalletService) updateWallet(ctx context.Context, wallet *WalletStruct) error {
+	if wallet == nil {
+		return errors.New("Wallet is nil")
+	}
+
 	err := s.repo.UpdateWallet(ctx, wallet)
 	if err != nil {
 		return err
@@ -48,9 +61,11 @@ func (s *WalletService) DepositInWallet(ctx context.Context, money float64, wall
 	if money <= 0 {
 		return errors.New("Deposit amount must be positive")
 	}
+
 	if wallet == nil {
 		return errors.New("Wallet not found")
 	}
+
 	wallet.Balance += money
 
 	// Round the balance to 2 decimal places
@@ -76,6 +91,9 @@ func (s *WalletService) DepositInWallet(ctx context.Context, money float64, wall
 }
 
 func (s *WalletService) WithdrawFromWallet(ctx context.Context, money float64, wallet *WalletStruct) error {
+	if wallet == nil {
+		return errors.New("Wallet not found")
+	}
 
 	if money <= 0 {
 		return errors.New("Withdrawal amount must be positive")
