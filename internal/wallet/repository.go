@@ -54,10 +54,53 @@ func (r *PostgresWalletRepo) GetWallet(ctx context.Context, id string) (*WalletS
 }
 
 func (r *PostgresWalletRepo) UpdateWallet(ctx context.Context, wallet *WalletStruct) error {
-	query := `UPDATE wallets SET balance = $1, updated_at = NOW(), version = version + 1 WHERE id = $2`
-	_, err := r.db.ExecContext(ctx, query, wallet.Balance, wallet.WalletID)
+	// Start a transaction
+	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
+		Isolation: sql.LevelReadCommitted, // TODO: Adjust isolation level as needed
+	})
 	if err != nil {
 		return err
 	}
+
+	// Handle the commit/rollback at the end using a defer
+	defer func() {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
+		}
+	}()
+
+	// Lock the wallet row
+	var currentBalance float64
+	var currentVersion int
+	lockQuery := `SELECT balance, version FROM wallets WHERE id = $1 FOR UPDATE`
+	err = tx.QueryRowContext(ctx, lockQuery, wallet.WalletID).Scan(&currentBalance, &currentVersion)
+	if err != nil {
+		return err
+	}
+
+	// Check if the version is still the same
+	if wallet.Version != currentVersion {
+		return fmt.Errorf("Wallet version mismatch")
+	}
+
+	// Perform the update
+	updateQuery := `
+        UPDATE wallets
+        SET balance = $1,
+            updated_at = NOW(),
+            version = version + 1
+        WHERE id = $2
+    `
+	_, err = tx.ExecContext(ctx, updateQuery, wallet.Balance, wallet.WalletID)
+	if err != nil {
+		return err
+	}
+
+	// The transaction will be committed by the deferred function if no errors occurred
 	return nil
 }
