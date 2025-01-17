@@ -8,6 +8,7 @@ import (
 
 type WalletStruct struct {
 	WalletID  uuid.UUID
+	UserID    uuid.UUID
 	Balance   float64
 	Version   int
 	CreatedAt time.Time

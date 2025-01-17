@@ -8,3 +8,4 @@ DROP FUNCTION IF EXISTS update_timestamp;
 --- Drop Tables (reverse order of creation)
 DROP TABLE IF EXISTS transactions;
 DROP TABLE IF EXISTS wallets;
+DROP TABLE IF EXISTS users;

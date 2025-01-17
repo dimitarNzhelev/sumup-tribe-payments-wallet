@@ -48,8 +48,9 @@ type ServerConfig struct {
 	// CorsDebug enables debug mode for CORS.
 	CorsDebug bool `default:"false" envconfig:"CORS_DEBUG"`
 
-	Log      Log
-	Database Database
+	Log       Log
+	Database  Database
+	JWTConfig JWTConfig
 }
 
 func NewServerConfig() (*ServerConfig, error) {

@@ -8,9 +8,11 @@ import (
 	_ "github.com/lib/pq"
 
 	"tribe-payments-wallet-golang-interview-assignment/internal/api"
+	"tribe-payments-wallet-golang-interview-assignment/internal/auth"
 	"tribe-payments-wallet-golang-interview-assignment/internal/config"
 	"tribe-payments-wallet-golang-interview-assignment/internal/http"
 	"tribe-payments-wallet-golang-interview-assignment/internal/transactions"
+	"tribe-payments-wallet-golang-interview-assignment/internal/user"
 	"tribe-payments-wallet-golang-interview-assignment/internal/wallet"
 
 	"github.com/go-chi/chi/middleware"
@@ -78,10 +80,14 @@ func NewApiCmd(osExecutor os.OsExecutor) *cobra.Command {
 				errors.New(fmt.Sprintf("Failed to ping database: %s", err))
 			}
 
+			auth.InitializeAuthConfig(cfg.JWTConfig)
+
 			walletRepo := wallet.NewPostgresWalletRepo(db)
 			transactionRepo := transactions.NewPostgresTransactionRepo(db)
 			transactionService := transactions.NewTransactionService(transactionRepo)
 			walletService := wallet.NewWalletService(walletRepo, transactionService)
+			userRepo := user.NewPostgresUsersRepo(db)
+			userService := user.NewUserService(userRepo)
 
 			mux := chi.NewRouter()
 			mux.Use(middleware.StripSlashes)
@@ -99,7 +105,7 @@ func NewApiCmd(osExecutor os.OsExecutor) *cobra.Command {
 				),
 			)
 
-			api.RegisterRoutes(mux, log, walletService)
+			api.RegisterRoutes(mux, log, walletService, userService, cfg.JWTConfig)
 
 			httpServer := http.NewServer(
 				log,

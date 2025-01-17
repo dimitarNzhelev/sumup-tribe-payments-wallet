@@ -5,6 +5,7 @@ import (
 	"math"
 	"tribe-payments-wallet-golang-interview-assignment/internal/transactions"
 
+	"github.com/google/uuid"
 	"github.com/sumup-oss/go-pkgs/errors"
 )
 
@@ -24,6 +25,10 @@ func (s *WalletService) CreateWallet(ctx context.Context, wallet *WalletStruct) 
 
 	if wallet.Balance < 0 {
 		return nil, errors.New("Balance cannot be negative")
+	}
+
+	if wallet.UserID == uuid.Nil {
+		return nil, errors.New("User ID is empty")
 	}
 
 	wallet, err := s.repo.CreateWallet(ctx, wallet)

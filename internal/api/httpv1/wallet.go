@@ -7,6 +7,7 @@ import (
 	"tribe-payments-wallet-golang-interview-assignment/internal/wallet"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 
 	"github.com/sumup-oss/go-pkgs/logger"
 )
@@ -24,8 +25,16 @@ func CreateWalletHandler(log logger.StructuredLogger, walletService *wallet.Wall
 			return
 		}
 
+		// Get the user id from the context
+		userID, ok := r.Context().Value("userID").(string)
+		if !ok {
+			http.Error(w, "User ID not found in context", http.StatusInternalServerError)
+			return
+		}
+
 		wallet := &wallet.WalletStruct{
 			Balance: req.Balance,
+			UserID:  uuid.MustParse(userID),
 		}
 
 		// Call the service to create the wallet

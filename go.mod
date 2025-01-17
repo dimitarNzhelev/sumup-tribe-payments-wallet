@@ -13,6 +13,7 @@ require (
 
 require (
 	github.com/go-chi/chi v1.5.4 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/go-syslog v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
