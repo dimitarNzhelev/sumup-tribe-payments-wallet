@@ -1,0 +1,43 @@
+version: "3"
+
+services:   
+  postgres-db:
+    image: postgres:12
+    volumes:
+      - ${PWD}/postgres-db/pgdata:/pgdata
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_USER=docker
+      - POSTGRES_PASSWORD=docker
+      - PGDATA=/pgdata
+      - POSTGRES_DB=test_db
+
+  migrate:
+    image: migrate/migrate
+    volumes:
+      - ./migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://docker:docker@postgres-db:5432/test_db?sslmode=disable",
+      "up"
+    ]
+    depends_on:
+      - postgres-db
+
+  go-api:
+    image: golang:1.23.4
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - 8080:8080
+    command: go run main.go api
+    environment:
+      - DB_HOST=postgres-db:5432
+      - DB_DATABASE=test_db
+      - DB_USERNAME=docker
+      - DB_PASSWORD=docker
+    depends_on:
+      - postgres-db
+      - migrate
