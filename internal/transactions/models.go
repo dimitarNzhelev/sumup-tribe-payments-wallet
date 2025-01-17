@@ -9,8 +9,8 @@ import (
 type TransactionStruct struct {
 	Id              uuid.UUID
 	WalletID        uuid.UUID
-	Amount          float64
+	Amount          int64
 	TransactionType string
-	BalanceSnapshot float64
+	BalanceSnapshot int64
 	Created_At      time.Time
 }
