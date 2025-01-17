@@ -17,6 +17,20 @@ var (
 	ErrWalledIDEmpty  = errors.New("Wallet ID is required")
 )
 
+func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletModule.WalletStruct) {
+	w.WriteHeader(statusCode)
+	response := walletModule.WalletResponse{
+		WalletID:  wallet.WalletID,
+		Balance:   float64(wallet.Balance) / 100.0,
+		Version:   wallet.Version,
+		CreatedAt: wallet.CreatedAt,
+		UpdatedAt: wallet.UpdatedAt,
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
+	}
+}
+
 func CreateWalletHandler(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -41,20 +55,8 @@ func CreateWalletHandler(log logger.StructuredLogger, walletService *walletModul
 			return
 		}
 
-		// Set status and write the response as JSON
-		w.WriteHeader(http.StatusCreated)
-
-		response := walletModule.WalletResponse{
-			WalletID:  newWallet.WalletID,
-			Balance:   float64(newWallet.Balance) / 100.0,
-			Version:   newWallet.Version,
-			CreatedAt: newWallet.CreatedAt,
-			UpdatedAt: newWallet.UpdatedAt,
-		}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
-			return
-		}
+		// Use the new function to write the response
+		writeWalletResponse(w, http.StatusCreated, newWallet)
 	}
 }
 
@@ -76,19 +78,8 @@ func GetWalletHandler(log logger.StructuredLogger, walletService *walletModule.W
 			return
 		}
 
-		// Set status and write the response as JSON
-		w.WriteHeader(http.StatusOK)
-		response := walletModule.WalletResponse{
-			WalletID:  wallet.WalletID,
-			Balance:   float64(wallet.Balance) / 100.0,
-			Version:   wallet.Version,
-			CreatedAt: wallet.CreatedAt,
-			UpdatedAt: wallet.UpdatedAt,
-		}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
-			return
-		}
+		// Use the new function to write the response
+		writeWalletResponse(w, http.StatusOK, wallet)
 	}
 }
 
@@ -132,17 +123,7 @@ func TransactionInWalletHandler(log logger.StructuredLogger, walletService *wall
 			return
 		}
 
-		w.WriteHeader(http.StatusOK)
-		response := walletModule.WalletResponse{
-			WalletID:  wallet.WalletID,
-			Balance:   float64(wallet.Balance) / 100.0,
-			Version:   wallet.Version,
-			CreatedAt: wallet.CreatedAt,
-			UpdatedAt: wallet.UpdatedAt,
-		}
-		if err := json.NewEncoder(w).Encode(response); err != nil {
-			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
-			return
-		}
+		// Use the new function to write the response
+		writeWalletResponse(w, http.StatusOK, wallet)
 	}
 }
