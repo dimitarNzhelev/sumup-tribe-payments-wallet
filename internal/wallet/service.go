@@ -2,6 +2,7 @@ package wallet
 
 import (
 	"context"
+	"math"
 	"tribe-payments-wallet-golang-interview-assignment/internal/transactions"
 
 	"github.com/sumup-oss/go-pkgs/errors"
@@ -51,6 +52,10 @@ func (s *WalletService) DepositInWallet(ctx context.Context, money float64, wall
 		return errors.New("Wallet not found")
 	}
 	wallet.Balance += money
+
+	// Round the balance to 2 decimal places
+	wallet.Balance = math.Round(wallet.Balance*100) / 100
+
 	err := s.updateWallet(ctx, wallet)
 	if err != nil {
 		return err
@@ -80,6 +85,9 @@ func (s *WalletService) WithdrawFromWallet(ctx context.Context, money float64, w
 		return errors.New("Insufficient funds")
 	}
 	wallet.Balance -= money
+
+	// Round the balance to 2 decimal places
+	wallet.Balance = math.Round(wallet.Balance*100) / 100
 
 	err := s.updateWallet(ctx, wallet)
 	if err != nil {
