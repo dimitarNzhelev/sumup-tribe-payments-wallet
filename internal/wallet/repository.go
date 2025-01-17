@@ -64,18 +64,15 @@ func (r *PostgresWalletRepo) UpdateWallet(ctx context.Context, wallet *WalletStr
 
 	// Handle the commit/rollback at the end using a defer
 	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback()
-			panic(p)
-		} else if err != nil {
-			tx.Rollback()
+		if err != nil {
+			_ = tx.Rollback()
 		} else {
 			err = tx.Commit()
 		}
 	}()
 
 	// Lock the wallet row
-	var currentBalance float64
+	var currentBalance int64
 	var currentVersion int
 	lockQuery := `SELECT balance, version FROM wallets WHERE id = $1 FOR UPDATE`
 	err = tx.QueryRowContext(ctx, lockQuery, wallet.WalletID).Scan(&currentBalance, &currentVersion)
@@ -86,6 +83,11 @@ func (r *PostgresWalletRepo) UpdateWallet(ctx context.Context, wallet *WalletStr
 	// Check if the version is still the same
 	if wallet.Version != currentVersion {
 		return fmt.Errorf("Wallet version mismatch")
+	}
+
+	// Check if the balance is still the same
+	if wallet.Balance != currentBalance {
+		return fmt.Errorf("Wallet balance mismatch")
 	}
 
 	// Perform the update
