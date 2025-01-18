@@ -4,8 +4,6 @@ import (
 	"time"
 	"tribe-payments-wallet-golang-interview-assignment/internal/config"
 
-	"github.com/sumup-oss/go-pkgs/errors"
-
 	jwt "github.com/golang-jwt/jwt/v5"
 )
 
@@ -38,7 +36,7 @@ func ValidateJWT(tokenString string) (string, string, error) {
 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		// Ensure the signing method is HMAC
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-			return nil, errors.New("unexpected signing method")
+			return nil, config.ErrUnexpectedSigningMethod
 		}
 		return []byte(jwtConfig.Secret), nil
 	})
@@ -52,11 +50,11 @@ func ValidateJWT(tokenString string) (string, string, error) {
 		email, emailOk := claims["email"].(string)
 
 		if !idOk || !emailOk {
-			return "", "", errors.New("invalid claims format")
+			return "", "", config.ErrInvalidClaimsFormat
 		}
 
 		return id, email, nil
 	}
 
-	return "", "", errors.New("invalid token")
+	return "", "", config.ErrInvalidToken
 }
