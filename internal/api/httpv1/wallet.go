@@ -17,7 +17,7 @@ var (
 	ErrWalledIDEmpty  = errors.New("Wallet ID is required")
 )
 
-func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletModule.Wallet) {
+func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletModule.Wallet, log logger.StructuredLogger) {
 	w.WriteHeader(statusCode)
 	response := walletModule.WalletResponse{
 		WalletID:  wallet.WalletID,
@@ -27,7 +27,8 @@ func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletMo
 		UpdatedAt: wallet.UpdatedAt,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
+		http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusUnprocessableEntity)
+		log.Error(fmt.Sprintf("Error encoding response: %s", err))
 	}
 }
 
@@ -41,12 +42,12 @@ func HandleCreateWallet(log logger.StructuredLogger, walletService *walletModule
 		// Call the service to create the wallet
 		err := walletService.CreateWallet(r.Context(), wallet)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error creating wallet: %s", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Error creating wallet: %s", err), http.StatusUnprocessableEntity)
+			log.Error(fmt.Sprintf("Error creating wallet: %s", err))
 			return
 		}
 
-		// Use the new function to write the response
-		writeWalletResponse(w, http.StatusCreated, wallet)
+		writeWalletResponse(w, http.StatusCreated, wallet, log)
 	}
 }
 
@@ -58,6 +59,7 @@ func HandleGetWallet(log logger.StructuredLogger, walletService *walletModule.Wa
 		id := chi.URLParam(r, "id")
 		if id == "" {
 			http.Error(w, ErrWalledIDEmpty.Error(), http.StatusBadRequest)
+			log.Error(ErrWalledIDEmpty.Error())
 			return
 		}
 
@@ -66,12 +68,12 @@ func HandleGetWallet(log logger.StructuredLogger, walletService *walletModule.Wa
 		wallet, err := walletService.GetWallet(r.Context(), id)
 
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error getting wallet: %s", err), http.StatusInternalServerError)
+			http.Error(w, "Wallet not found", http.StatusNotFound)
+			log.Error(fmt.Sprintf("Error getting wallet: %s", err))
 			return
 		}
 
-		// Use the new function to write the response
-		writeWalletResponse(w, http.StatusOK, wallet)
+		writeWalletResponse(w, http.StatusOK, wallet, log)
 	}
 }
 
@@ -85,6 +87,7 @@ func HandleTransactionInWallet(log logger.StructuredLogger, walletService *walle
 		id := chi.URLParam(r, "id")
 		if id == "" {
 			http.Error(w, ErrWalledIDEmpty.Error(), http.StatusBadRequest)
+			log.Error(ErrWalledIDEmpty.Error())
 			return
 		}
 
@@ -93,6 +96,7 @@ func HandleTransactionInWallet(log logger.StructuredLogger, walletService *walle
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			http.Error(w, ErrInvalidPayload.Error(), http.StatusBadRequest)
+			log.Error(ErrInvalidPayload.Error())
 			return
 		}
 
@@ -109,15 +113,16 @@ func HandleTransactionInWallet(log logger.StructuredLogger, walletService *walle
 			err = walletService.DepositInWallet(r.Context(), amount, wallet)
 		} else {
 			http.Error(w, "Invalid transaction type", http.StatusBadRequest)
+			log.Error("Invalid transaction type")
 			return
 		}
 
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error %s in wallet: %s", req.TransactionType, err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Error %s in wallet: %s", req.TransactionType, err), http.StatusUnprocessableEntity)
+			log.Error(fmt.Sprintf("Error %s in wallet: %s", req.TransactionType, err))
 			return
 		}
 
-		// Use the new function to write the response
-		writeWalletResponse(w, http.StatusOK, wallet)
+		writeWalletResponse(w, http.StatusOK, wallet, log)
 	}
 }

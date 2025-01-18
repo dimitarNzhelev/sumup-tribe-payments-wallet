@@ -13,7 +13,7 @@ CREATE TABLE wallets (
 --- Transactions Table
 CREATE TABLE transactions (
     transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    wallet_id UUID NOT NULL REFERENCES wallets(id) ON DELETE CASCADE,
+    wallet_id UUID NOT NULL REFERENCES wallets(id),
     transaction_type VARCHAR(50) NOT NULL CHECK (transaction_type IN ('deposit', 'withdrawal')),
     amount BIGINT NOT NULL,
     balance_snapshot BIGINT,
@@ -23,13 +23,16 @@ CREATE TABLE transactions (
 --- Indexes
 CREATE INDEX idx_wallets_id ON wallets (id);
 CREATE INDEX idx_transactions_wallet_id ON transactions (wallet_id);
+CREATE INDEX idx_transactions_balance_snapshot ON transactions (balance_snapshot);
 CREATE INDEX idx_transactions_created_at ON transactions (created_at);
 
 --- Triggers for Automatic Timestamp Updates (Optional)
 CREATE OR REPLACE FUNCTION update_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = CURRENT_TIMESTAMP;
+    IF ROW(NEW.*) IS DISTINCT FROM ROW(OLD.*) THEN
+        NEW.updated_at = NOW();
+    END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
