@@ -55,7 +55,7 @@ func (r *PostgresWalletRepo) GetWallet(ctx context.Context, id string) (*Wallet,
 func (r *PostgresWalletRepo) UpdateWallet(ctx context.Context, wallet *Wallet) error {
 	// Start a transaction
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
-		Isolation: sql.LevelReadCommitted, // TODO: Adjust isolation level as needed
+		Isolation: sql.LevelReadCommitted, // Ensures that a transaction only reads data that has been committed.
 	})
 	if err != nil {
 		return err
