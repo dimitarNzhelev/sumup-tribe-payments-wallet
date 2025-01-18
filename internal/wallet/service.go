@@ -2,11 +2,10 @@ package wallet
 
 import (
 	"context"
-	"math"
+	"tribe-payments-wallet-golang-interview-assignment/internal/config"
 	"tribe-payments-wallet-golang-interview-assignment/internal/transactions"
 
 	"github.com/google/uuid"
-	"github.com/sumup-oss/go-pkgs/errors"
 )
 
 type WalletService struct {
@@ -18,29 +17,25 @@ func NewWalletService(repo WalletRepo, transactionsService *transactions.Transac
 	return &WalletService{repo: repo, transactionsService: transactionsService}
 }
 
-func (s *WalletService) CreateWallet(ctx context.Context, wallet *WalletStruct) (*WalletStruct, error) {
+func (s *WalletService) CreateWallet(ctx context.Context, wallet *Wallet) error {
 	if wallet == nil {
-		return nil, errors.New("Wallet is nil")
-	}
-
-	if wallet.Balance < 0 {
-		return nil, errors.New("Balance cannot be negative")
+		return config.ErrWalletNotFound
 	}
 
 	if wallet.UserID == uuid.Nil {
-		return nil, errors.New("User ID is empty")
+		return config.ErrUserIDEmpty
 	}
 
-	wallet, err := s.repo.CreateWallet(ctx, wallet)
+	err := s.repo.CreateWallet(ctx, wallet)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return wallet, nil
+	return nil
 }
 
-func (s *WalletService) GetWallet(ctx context.Context, id string) (*WalletStruct, error) {
+func (s *WalletService) GetWallet(ctx context.Context, id string) (*Wallet, error) {
 	if id == "" {
-		return nil, errors.New("Wallet ID is empty")
+		return nil, config.ErrWalletIDEmpty
 	}
 
 	wallet, err := s.repo.GetWallet(ctx, id)
@@ -50,38 +45,36 @@ func (s *WalletService) GetWallet(ctx context.Context, id string) (*WalletStruct
 	return wallet, nil
 }
 
-func (s *WalletService) updateWallet(ctx context.Context, wallet *WalletStruct) error {
+func (s *WalletService) updateWallet(ctx context.Context, wallet *Wallet) error {
 	if wallet == nil {
-		return errors.New("Wallet is nil")
+		return config.ErrWalletNotFound
 	}
 
 	err := s.repo.UpdateWallet(ctx, wallet)
 	if err != nil {
 		return err
 	}
+
 	return nil
 }
 
-func (s *WalletService) DepositInWallet(ctx context.Context, money float64, wallet *WalletStruct) error {
+func (s *WalletService) DepositInWallet(ctx context.Context, money int64, wallet *Wallet) error {
 	if money <= 0 {
-		return errors.New("Deposit amount must be positive")
+		return config.ErrDepositNegative
 	}
 
 	if wallet == nil {
-		return errors.New("Wallet not found")
+		return config.ErrWalletNotFound
 	}
 
 	wallet.Balance += money
-
-	// Round the balance to 2 decimal places
-	wallet.Balance = math.Round(wallet.Balance*100) / 100
 
 	err := s.updateWallet(ctx, wallet)
 	if err != nil {
 		return err
 	}
 
-	tr := transactions.TransactionStruct{
+	tr := transactions.Transaction{
 		WalletID:        wallet.WalletID,
 		Amount:          money,
 		TransactionType: "deposit",
@@ -95,29 +88,26 @@ func (s *WalletService) DepositInWallet(ctx context.Context, money float64, wall
 	return nil
 }
 
-func (s *WalletService) WithdrawFromWallet(ctx context.Context, money float64, wallet *WalletStruct) error {
+func (s *WalletService) WithdrawFromWallet(ctx context.Context, money int64, wallet *Wallet) error {
 	if wallet == nil {
-		return errors.New("Wallet not found")
+		return config.ErrWalletNotFound
 	}
 
 	if money <= 0 {
-		return errors.New("Withdrawal amount must be positive")
+		return config.ErrWithdrawalZero
 	}
 
 	if wallet.Balance < money {
-		return errors.New("Insufficient funds")
+		return config.ErrInsufficientFunds
 	}
 	wallet.Balance -= money
-
-	// Round the balance to 2 decimal places
-	wallet.Balance = math.Round(wallet.Balance*100) / 100
 
 	err := s.updateWallet(ctx, wallet)
 	if err != nil {
 		return err
 	}
 
-	tr := transactions.TransactionStruct{
+	tr := transactions.Transaction{
 		WalletID:        wallet.WalletID,
 		Amount:          money,
 		TransactionType: "withdrawal",

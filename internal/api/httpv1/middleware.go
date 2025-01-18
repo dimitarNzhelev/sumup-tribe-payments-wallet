@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 	"tribe-payments-wallet-golang-interview-assignment/internal/auth"
+	"tribe-payments-wallet-golang-interview-assignment/internal/config"
 	"tribe-payments-wallet-golang-interview-assignment/internal/wallet"
 
 	"github.com/go-chi/chi/v5"
@@ -17,21 +18,21 @@ func AuthMiddleware(log logger.StructuredLogger) func(next http.Handler) http.Ha
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+				http.Error(w, config.ErrInvalidAuthHeader.Error(), http.StatusUnauthorized)
 				return
 			}
 			// Typically, the header is "Authorization: Bearer <token>"
 			parts := strings.SplitN(authHeader, " ", 2)
 			if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
-				http.Error(w, "Invalid Authorization header format", http.StatusUnauthorized)
+				http.Error(w, config.ErrInvalidAuthHeader.Error(), http.StatusUnauthorized)
 				return
 			}
 			tokenString := parts[1]
 
 			userID, _, err := auth.ValidateJWT(tokenString)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Invalid token: %s", err), http.StatusUnauthorized)
-				log.Error(fmt.Sprintf("Invalid token: %s", err))
+				log.Error(config.ErrInvalidToken.Error())
+				http.Error(w, config.ErrInvalidToken.Error(), http.StatusUnauthorized)
 				return
 			}
 
@@ -47,14 +48,14 @@ func WalletOwnershipMiddleware(log logger.StructuredLogger, walletService *walle
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := chi.URLParam(r, "id")
 			if id == "" {
-				http.Error(w, "Wallet ID is required", http.StatusBadRequest)
+				http.Error(w, config.ErrWalletIDEmpty.Error(), http.StatusBadRequest)
 				return
 			}
 
 			walletObj, err := walletService.GetWallet(r.Context(), id)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Error getting wallet: %s", err), http.StatusUnprocessableEntity)
-				log.Error(fmt.Sprintf("Error getting wallet: %s", err))
+				log.Error(config.ErrWalletNotFound.Error())
+				http.Error(w, config.ErrWalletNotFound.Error(), http.StatusNotFound)
 				return
 			}
 
@@ -63,13 +64,13 @@ func WalletOwnershipMiddleware(log logger.StructuredLogger, walletService *walle
 
 			if !ok || userID == "" {
 				// This scenario would only happen if AuthMiddleware wasn't used, or context wasn't set
-				http.Error(w, "Missing user in context", http.StatusUnauthorized)
+				http.Error(w, config.ErrMissingUserIDContext.Error(), http.StatusUnauthorized)
 				return
 			}
 
 			if walletObj.UserID.String() != userID {
-				http.Error(w, "Wallet does not belong to user", http.StatusForbidden)
 				log.Error(fmt.Sprintf("Wallet %s does not belong to user %s", walletObj.WalletID.String(), userID))
+				http.Error(w, "Wallet does not belong to user", http.StatusForbidden)
 				return
 			}
 

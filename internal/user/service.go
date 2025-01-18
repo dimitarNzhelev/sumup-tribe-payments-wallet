@@ -3,14 +3,7 @@ package user
 import (
 	"context"
 	"tribe-payments-wallet-golang-interview-assignment/internal/auth"
-
-	"github.com/sumup-oss/go-pkgs/errors"
-)
-
-var (
-	ErrEmptyField = errors.New("Empty field in user")
-	ErrUserExists = errors.New("User already exists")
-	ErrUserIsNil  = errors.New("User is nil")
+	"tribe-payments-wallet-golang-interview-assignment/internal/config"
 )
 
 type UserService struct {
@@ -23,16 +16,16 @@ func NewUserService(repo UserRepository) *UserService {
 
 func (s *UserService) CreateUser(ctx context.Context, user *User) error {
 	if user == nil {
-		return ErrUserIsNil
+		return config.ErrUserIsNil
 	}
 
 	if user.Email == "" || user.PasswordHash == "" || user.FirstName == "" || user.LastName == "" {
-		return ErrEmptyField
+		return config.ErrEmptyField
 	}
 
 	_, err := s.repo.GetUserByEmail(ctx, user.Email)
 	if err == nil {
-		return ErrUserExists
+		return config.ErrUserExists
 	}
 
 	user.PasswordHash, err = auth.GeneratePasswordHash(user.PasswordHash)
@@ -49,7 +42,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *User) error {
 
 func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	if email == "" {
-		return nil, ErrEmptyField
+		return nil, config.ErrEmptyField
 	}
 
 	usr, err := s.repo.GetUserByEmail(ctx, email)
@@ -61,7 +54,7 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*User, 
 
 func (s *UserService) GetUserByID(ctx context.Context, id string) (*User, error) {
 	if id == "" {
-		return nil, ErrEmptyField
+		return nil, config.ErrEmptyField
 	}
 
 	usr, err := s.repo.GetUserByID(ctx, id)

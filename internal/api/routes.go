@@ -28,15 +28,14 @@ func RegisterRoutes(
 			r.Use(httpv1.AuthMiddleware(log))
 
 			// Create wallet
-			r.Post("/wallet", httpv1.CreateWalletHandler(log, walletService))
+			r.Post("/wallet", httpv1.HandleCreateWallet(log, walletService))
 
 			// Access or modify a specific wallet only if user owns it
 			r.Route("/wallet/{id}", func(r chi.Router) {
 				r.Use(httpv1.WalletOwnershipMiddleware(log, walletService))
 
-				r.Get("/", httpv1.GetWalletHandler(log, walletService))
-				r.Post("/deposit", httpv1.DepositInWalletHandler(log, walletService))
-				r.Post("/withdraw", httpv1.WithdrawFromWalletHandler(log, walletService))
+				r.Get("/", httpv1.HandleGetWallet(log, walletService))
+				r.Post("/transaction", httpv1.HandleTransactionInWallet(log, walletService))
 			})
 		})
 	})

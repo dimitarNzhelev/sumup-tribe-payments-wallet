@@ -5,15 +5,10 @@ import (
 	"fmt"
 	"net/http"
 	"tribe-payments-wallet-golang-interview-assignment/internal/auth"
+	"tribe-payments-wallet-golang-interview-assignment/internal/config"
 	"tribe-payments-wallet-golang-interview-assignment/internal/user"
 
-	"github.com/sumup-oss/go-pkgs/errors"
 	"github.com/sumup-oss/go-pkgs/logger"
-)
-
-var (
-	ErrInvalidRequestPayload = errors.New("Invalid request payload")
-	ErrInvalidCredentials    = errors.New("Invalid credentials")
 )
 
 func HandlerCreateUser(log logger.StructuredLogger, userService *user.UserService) http.HandlerFunc {
@@ -25,8 +20,8 @@ func HandlerCreateUser(log logger.StructuredLogger, userService *user.UserServic
 		var req user.UserCreateRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			log.Error(ErrInvalidRequestPayload.Error())
-			http.Error(w, ErrInvalidRequestPayload.Error(), http.StatusBadRequest)
+			log.Error(config.ErrInvalidRequestPayload.Error())
+			http.Error(w, config.ErrInvalidRequestPayload.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -39,8 +34,8 @@ func HandlerCreateUser(log logger.StructuredLogger, userService *user.UserServic
 
 		err = userService.CreateUser(r.Context(), usr)
 		if err != nil {
-			log.Error(fmt.Sprintf("Error creating user: %s", err))
-			http.Error(w, fmt.Sprintf("Error creating user: %s", err), http.StatusUnprocessableEntity)
+			log.Error(fmt.Sprintf(config.ErrFailedToCreateUser.Error(), err))
+			http.Error(w, config.ErrFailedToCreateUser.Error(), http.StatusUnprocessableEntity)
 			return
 		}
 	}
@@ -54,8 +49,8 @@ func HandlerLoginUser(log logger.StructuredLogger, userService *user.UserService
 		var req user.UserLoginRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			log.Error(ErrInvalidRequestPayload.Error())
-			http.Error(w, ErrInvalidRequestPayload.Error(), http.StatusBadRequest)
+			log.Error(config.ErrInvalidRequestPayload.Error())
+			http.Error(w, config.ErrInvalidRequestPayload.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -63,15 +58,15 @@ func HandlerLoginUser(log logger.StructuredLogger, userService *user.UserService
 
 		err = auth.CheckPasswordHash(req.Password, usr.PasswordHash)
 		if err != nil {
-			log.Error(ErrInvalidCredentials.Error())
-			http.Error(w, ErrInvalidCredentials.Error(), http.StatusUnauthorized)
+			log.Error(config.ErrInvalidCredentials.Error())
+			http.Error(w, config.ErrInvalidCredentials.Error(), http.StatusUnauthorized)
 			return
 		}
 
 		jwt, err := auth.GenerateJWT(usr.ID.String(), usr.Email)
 		if err != nil {
-			log.Error(fmt.Sprintf("Error generating JWT: %s", err))
-			http.Error(w, fmt.Sprintf("Error generating JWT: %s", err), http.StatusInternalServerError)
+			log.Error(fmt.Sprintf(config.ErrGeneratingJWT.Error(), err))
+			http.Error(w, config.ErrGeneratingJWT.Error(), http.StatusUnprocessableEntity)
 			return
 		}
 
@@ -83,7 +78,7 @@ func HandlerLoginUser(log logger.StructuredLogger, userService *user.UserService
 		w.WriteHeader(http.StatusOK)
 		if err := json.NewEncoder(w).Encode(response); err != nil {
 			log.Error(fmt.Sprintf("Error encoding response: %s", err))
-			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusUnprocessableEntity)
 			return
 		}
 	}

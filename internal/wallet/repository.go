@@ -17,46 +17,42 @@ func NewPostgresWalletRepo(db *sql.DB) *PostgresWalletRepo {
 }
 
 type WalletRepo interface {
-	CreateWallet(ctx context.Context, wallet *WalletStruct) (*WalletStruct, error)
-	GetWallet(ctx context.Context, id string) (*WalletStruct, error)
-	UpdateWallet(ctx context.Context, wallet *WalletStruct) error
+	CreateWallet(ctx context.Context, wallet *Wallet) error
+	GetWallet(ctx context.Context, id string) (*Wallet, error)
+	UpdateWallet(ctx context.Context, wallet *Wallet) error
 }
 
-func (r *PostgresWalletRepo) CreateWallet(ctx context.Context, wallet *WalletStruct) (*WalletStruct, error) {
+func (r *PostgresWalletRepo) CreateWallet(ctx context.Context, wallet *Wallet) error {
 	// Updated query with RETURNING clause to retrieve the new wallet ID
-	query := `INSERT INTO wallets (balance, user_id) VALUES ($1, $2) RETURNING id, created_at, updated_at`
+	query := `INSERT INTO wallets (user_id) VALUES ($1) RETURNING id, version, created_at, updated_at`
 
 	// Declare a variable to store the generated wallet ID
 	var walletID string
 
 	// Execute the query and retrieve the new wallet ID
-	err := r.db.QueryRowContext(ctx, query, wallet.Balance, wallet.UserID).Scan(&walletID, &wallet.CreatedAt, &wallet.UpdatedAt)
+	err := r.db.QueryRowContext(ctx, query, wallet.UserID).Scan(&walletID, &wallet.Version, &wallet.CreatedAt, &wallet.UpdatedAt)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Return the newly created wallet
-	return &WalletStruct{
-		WalletID:  uuid.MustParse(walletID),
-		UserID:    wallet.UserID,
-		Balance:   wallet.Balance,
-		Version:   1,
-		CreatedAt: wallet.CreatedAt,
-		UpdatedAt: wallet.UpdatedAt,
-	}, nil
+	wallet.WalletID = uuid.MustParse(walletID)
+
+	return nil
 }
 
-func (r *PostgresWalletRepo) GetWallet(ctx context.Context, id string) (*WalletStruct, error) {
+func (r *PostgresWalletRepo) GetWallet(ctx context.Context, id string) (*Wallet, error) {
 	query := `SELECT * FROM wallets WHERE id = $1`
-	wallet := WalletStruct{}
+
+	wallet := Wallet{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&wallet.WalletID, &wallet.UserID, &wallet.Balance, &wallet.Version, &wallet.CreatedAt, &wallet.UpdatedAt)
 	if err != nil {
 		return nil, err
 	}
+
 	return &wallet, nil
 }
 
-func (r *PostgresWalletRepo) UpdateWallet(ctx context.Context, wallet *WalletStruct) error {
+func (r *PostgresWalletRepo) UpdateWallet(ctx context.Context, wallet *Wallet) error {
 	// Start a transaction
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
 		Isolation: sql.LevelReadCommitted, // TODO: Adjust isolation level as needed
@@ -67,21 +63,17 @@ func (r *PostgresWalletRepo) UpdateWallet(ctx context.Context, wallet *WalletStr
 
 	// Handle the commit/rollback at the end using a defer
 	defer func() {
-		if p := recover(); p != nil {
-			tx.Rollback()
-			panic(p)
-		} else if err != nil {
-			tx.Rollback()
+		if err != nil {
+			_ = tx.Rollback()
 		} else {
 			err = tx.Commit()
 		}
 	}()
 
 	// Lock the wallet row
-	var currentBalance float64
 	var currentVersion int
-	lockQuery := `SELECT balance, version FROM wallets WHERE id = $1 FOR UPDATE`
-	err = tx.QueryRowContext(ctx, lockQuery, wallet.WalletID).Scan(&currentBalance, &currentVersion)
+	lockQuery := `SELECT version FROM wallets WHERE id = $1 FOR UPDATE`
+	err = tx.QueryRowContext(ctx, lockQuery, wallet.WalletID).Scan(&currentVersion)
 	if err != nil {
 		return err
 	}

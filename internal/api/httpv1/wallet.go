@@ -5,7 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"tribe-payments-wallet-golang-interview-assignment/internal/auth"
-	"tribe-payments-wallet-golang-interview-assignment/internal/wallet"
+	"tribe-payments-wallet-golang-interview-assignment/internal/config"
+	walletModule "tribe-payments-wallet-golang-interview-assignment/internal/wallet"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -13,18 +14,25 @@ import (
 	"github.com/sumup-oss/go-pkgs/logger"
 )
 
-func CreateWalletHandler(log logger.StructuredLogger, walletService *wallet.WalletService) http.HandlerFunc {
+func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletModule.Wallet, log logger.StructuredLogger) {
+	w.WriteHeader(statusCode)
+	response := walletModule.WalletResponse{
+		WalletID:  wallet.WalletID,
+		Balance:   float64(wallet.Balance) / 100.0,
+		Version:   wallet.Version,
+		CreatedAt: wallet.CreatedAt,
+		UpdatedAt: wallet.UpdatedAt,
+	}
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Error(fmt.Sprintf("Error encoding response: %s", err))
+		http.Error(w, fmt.Sprintf("Error encoding response: %s", err), statusCode)
+	}
+}
+
+func HandleCreateWallet(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		log.Info("CreateWalletHandler")
-
-		//Get the balance from the request body
-		var req wallet.WalletRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			http.Error(w, "Invalid request payload", http.StatusBadRequest)
-			return
-		}
+		log.Info("HandleCreateWallet")
 
 		// Get the user id from the context
 		userID, ok := auth.GetUserIDFromContext(r.Context())
@@ -33,128 +41,94 @@ func CreateWalletHandler(log logger.StructuredLogger, walletService *wallet.Wall
 			return
 		}
 
-		wallet := &wallet.WalletStruct{
-			Balance: req.Balance,
-			UserID:  uuid.MustParse(userID),
+		wallet := &walletModule.Wallet{
+			UserID: uuid.MustParse(userID),
 		}
 
 		// Call the service to create the wallet
-		newWallet, err := walletService.CreateWallet(r.Context(), wallet)
+		err := walletService.CreateWallet(r.Context(), wallet)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error creating wallet: %s", err), http.StatusInternalServerError)
+			log.Error(fmt.Sprintf("Error creating wallet: %s", err))
+			http.Error(w, fmt.Sprintf("Error creating wallet: %s", err), http.StatusUnprocessableEntity)
 			return
 		}
 
-		// Set status and write the response as JSON
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(newWallet); err != nil {
-			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
-			return
-		}
+		writeWalletResponse(w, http.StatusCreated, wallet, log)
 	}
 }
 
-func GetWalletHandler(log logger.StructuredLogger, walletService *wallet.WalletService) http.HandlerFunc {
+func HandleGetWallet(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
 		// Get the wallet ID from the URL
 		id := chi.URLParam(r, "id")
 		if id == "" {
-			http.Error(w, "Wallet ID is required", http.StatusBadRequest)
+			log.Error(config.ErrWalletIDEmpty.Error())
+			http.Error(w, config.ErrWalletIDEmpty.Error(), http.StatusBadRequest)
 			return
 		}
+
+		log.Info(fmt.Sprintf("HandleGetWallet for wallet ID: %s", id))
 
 		wallet, err := walletService.GetWallet(r.Context(), id)
 
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error getting wallet: %s", err), http.StatusInternalServerError)
+			log.Error(fmt.Sprintf("Error getting wallet: %s", err))
+			http.Error(w, "Wallet not found", http.StatusNotFound)
 			return
 		}
 
-		// Set status and write the response as JSON
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(wallet); err != nil {
-			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
-			return
-		}
+		writeWalletResponse(w, http.StatusOK, wallet, log)
 	}
 }
 
-func DepositInWalletHandler(log logger.StructuredLogger, walletService *wallet.WalletService) http.HandlerFunc {
+func HandleTransactionInWallet(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
-		log.Info("DepositInWalletHandler")
+		log.Info("TransactionInWalletHandler")
 
 		// Get the wallet ID from the URL
 		id := chi.URLParam(r, "id")
 		if id == "" {
-			http.Error(w, "Wallet ID is required", http.StatusBadRequest)
+			log.Error(config.ErrWalletIDEmpty.Error())
+			http.Error(w, config.ErrWalletIDEmpty.Error(), http.StatusBadRequest)
 			return
 		}
 
-		//Get the amount from the request body
-		var req wallet.WalletRequest
+		//Get the amount and type from the request body
+		var req walletModule.WalletRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid request payload: %s", err), http.StatusBadRequest)
+			log.Error(config.ErrInvalidRequestPayload.Error())
+			http.Error(w, config.ErrInvalidRequestPayload.Error(), http.StatusBadRequest)
 			return
 		}
+
+		log.Info(fmt.Sprintf("HandleTransactionInWallet for wallet ID: %s, amount: %f, transaction type %s", id, req.Amount, req.TransactionType))
 
 		wallet, err := walletService.GetWallet(r.Context(), id)
 
-		// Call the service to deposit in the wallet
-		err = walletService.DepositInWallet(r.Context(), req.Amount, wallet)
+		// Convert the amount to cents
+		amount := int64(req.Amount * 100)
+
+		if req.TransactionType == "withdraw" {
+			err = walletService.WithdrawFromWallet(r.Context(), amount, wallet)
+		} else if req.TransactionType == "deposit" {
+			err = walletService.DepositInWallet(r.Context(), amount, wallet)
+		} else {
+			http.Error(w, "Invalid transaction type", http.StatusBadRequest)
+			log.Error("Invalid transaction type")
+			return
+		}
 
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error depositing in wallet: %s", err), http.StatusInternalServerError)
+			log.Error(fmt.Sprintf("Error %s in wallet: %s", req.TransactionType, err))
+			http.Error(w, fmt.Sprintf("Error %s in wallet: %s", req.TransactionType, err), http.StatusUnprocessableEntity)
 			return
 		}
 
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(wallet); err != nil {
-			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
-			return
-		}
-	}
-}
-
-func WithdrawFromWalletHandler(log logger.StructuredLogger, walletService *wallet.WalletService) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-
-		log.Info("WithdrawFromWalletHandler")
-
-		// Get the wallet ID from the URL
-		id := chi.URLParam(r, "id")
-		if id == "" {
-			http.Error(w, "Wallet ID is required", http.StatusBadRequest)
-			return
-		}
-
-		//Get the amount from the request body
-		var req wallet.WalletRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Invalid request payload: %s", err), http.StatusBadRequest)
-			return
-		}
-
-		wallet, err := walletService.GetWallet(r.Context(), id)
-
-		// Call the service to deposit in the wallet
-		err = walletService.WithdrawFromWallet(r.Context(), req.Amount, wallet)
-
-		if err != nil {
-			http.Error(w, fmt.Sprintf("Error withdrawing from wallet: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		w.WriteHeader(http.StatusCreated)
-		if err := json.NewEncoder(w).Encode(wallet); err != nil {
-			http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusInternalServerError)
-			return
-		}
+		writeWalletResponse(w, http.StatusOK, wallet, log)
 	}
 }
