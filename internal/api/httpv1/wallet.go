@@ -37,7 +37,7 @@ func HandleCreateWallet(log logger.StructuredLogger, walletService *walletModule
 		// Get the user id from the context
 		userID, ok := auth.GetUserIDFromContext(r.Context())
 		if !ok {
-			http.Error(w, "User ID not found in context", http.StatusInternalServerError)
+			http.Error(w, "User ID not found in context", http.StatusUnauthorized)
 			return
 		}
 
