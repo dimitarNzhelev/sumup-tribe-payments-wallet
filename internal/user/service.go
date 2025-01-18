@@ -7,6 +7,12 @@ import (
 	"github.com/sumup-oss/go-pkgs/errors"
 )
 
+var (
+	ErrEmptyField = errors.New("Empty field in user")
+	ErrUserExists = errors.New("User already exists")
+	ErrUserIsNil  = errors.New("User is nil")
+)
+
 type UserService struct {
 	repo UserRepository
 }
@@ -15,14 +21,18 @@ func NewUserService(repo UserRepository) *UserService {
 	return &UserService{repo: repo}
 }
 
-func (s *UserService) CreateUser(ctx context.Context, user *UserStruct) error {
+func (s *UserService) CreateUser(ctx context.Context, user *User) error {
 	if user == nil {
-		return errors.New("User is nil")
+		return ErrUserIsNil
+	}
+
+	if user.Email == "" || user.PasswordHash == "" || user.FirstName == "" || user.LastName == "" {
+		return ErrEmptyField
 	}
 
 	_, err := s.repo.GetUserByEmail(ctx, user.Email)
 	if err == nil {
-		return errors.New("User already exists")
+		return ErrUserExists
 	}
 
 	user.PasswordHash, err = auth.GeneratePasswordHash(user.PasswordHash)
@@ -37,9 +47,9 @@ func (s *UserService) CreateUser(ctx context.Context, user *UserStruct) error {
 	return nil
 }
 
-func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*UserStruct, error) {
+func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*User, error) {
 	if email == "" {
-		return nil, errors.New("Email is empty")
+		return nil, ErrEmptyField
 	}
 
 	usr, err := s.repo.GetUserByEmail(ctx, email)
@@ -49,9 +59,9 @@ func (s *UserService) GetUserByEmail(ctx context.Context, email string) (*UserSt
 	return usr, nil
 }
 
-func (s *UserService) GetUserByID(ctx context.Context, id string) (*UserStruct, error) {
+func (s *UserService) GetUserByID(ctx context.Context, id string) (*User, error) {
 	if id == "" {
-		return nil, errors.New("ID is empty")
+		return nil, ErrEmptyField
 	}
 
 	usr, err := s.repo.GetUserByID(ctx, id)

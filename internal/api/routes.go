@@ -20,8 +20,8 @@ func RegisterRoutes(
 	mux.Get("/live", Health)
 
 	mux.Route("/v1", func(r chi.Router) {
-		r.Post("/user", httpv1.CreateUserHandler(log, userService))
-		r.Post("/login", httpv1.LoginHandler(log, userService))
+		r.Post("/user", httpv1.HandlerCreateUser(log, userService))
+		r.Post("/login", httpv1.HandlerLoginUser(log, userService))
 
 		// Everything here requires a valid JWT token
 		r.Group(func(r chi.Router) {

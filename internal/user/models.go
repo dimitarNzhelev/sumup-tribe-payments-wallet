@@ -2,7 +2,7 @@ package user
 
 import "github.com/google/uuid"
 
-type UserStruct struct {
+type User struct {
 	ID           uuid.UUID
 	FirstName    string
 	LastName     string

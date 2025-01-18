@@ -32,6 +32,7 @@ func CheckAuth(log logger.StructuredLogger) func(next http.Handler) http.Handler
 			userID, _, err := auth.ValidateJWT(tokenString)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("Invalid token: %s", err), http.StatusUnauthorized)
+				log.Error(fmt.Sprintf("Invalid token: %s", err))
 				return
 			}
 
@@ -53,7 +54,8 @@ func CheckIfWalletIsOwnedByUser(log logger.StructuredLogger, walletService *wall
 
 			walletObj, err := walletService.GetWallet(r.Context(), id)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("Error getting wallet: %s", err), http.StatusInternalServerError)
+				http.Error(w, fmt.Sprintf("Error getting wallet: %s", err), http.StatusUnprocessableEntity)
+				log.Error(fmt.Sprintf("Error getting wallet: %s", err))
 				return
 			}
 
@@ -68,6 +70,7 @@ func CheckIfWalletIsOwnedByUser(log logger.StructuredLogger, walletService *wall
 
 			if walletObj.UserID.String() != userID {
 				http.Error(w, "Wallet does not belong to user", http.StatusForbidden)
+				log.Error(fmt.Sprintf("Wallet %s does not belong to user %s", walletObj.WalletID.String(), userID))
 				return
 			}
 
