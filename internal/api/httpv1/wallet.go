@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"tribe-payments-wallet-golang-interview-assignment/internal/auth"
 	"tribe-payments-wallet-golang-interview-assignment/internal/wallet"
 
 	"github.com/go-chi/chi/v5"
@@ -26,7 +27,7 @@ func CreateWalletHandler(log logger.StructuredLogger, walletService *wallet.Wall
 		}
 
 		// Get the user id from the context
-		userID, ok := r.Context().Value("userID").(string)
+		userID, ok := auth.GetUserIDFromContext(r.Context())
 		if !ok {
 			http.Error(w, "User ID not found in context", http.StatusInternalServerError)
 			return

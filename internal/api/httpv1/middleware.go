@@ -1,7 +1,6 @@
 package httpv1
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
@@ -13,7 +12,7 @@ import (
 )
 
 // Middleware that checks for a valid JWT
-func CheckAuth(log logger.StructuredLogger) func(next http.Handler) http.Handler {
+func AuthMiddleware(log logger.StructuredLogger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			authHeader := r.Header.Get("Authorization")
@@ -37,13 +36,13 @@ func CheckAuth(log logger.StructuredLogger) func(next http.Handler) http.Handler
 			}
 
 			// Store the user ID in the context so handlers can retrieve it
-			ctx := context.WithValue(r.Context(), "userID", userID)
+			ctx := auth.WriteUserIDToContext(r.Context(), userID)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
 }
 
-func CheckIfWalletIsOwnedByUser(log logger.StructuredLogger, walletService *wallet.WalletService) func(http.Handler) http.Handler {
+func WalletOwnershipMiddleware(log logger.StructuredLogger, walletService *wallet.WalletService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			id := chi.URLParam(r, "id")
@@ -59,11 +58,11 @@ func CheckIfWalletIsOwnedByUser(log logger.StructuredLogger, walletService *wall
 				return
 			}
 
-			// Retrieve userID from context, cause CheckAuth should be used before this
-			userID, ok := r.Context().Value("userID").(string)
+			// Retrieve userID from context, cause AuthMiddleware should be used before this
+			userID, ok := auth.GetUserIDFromContext(r.Context())
 
 			if !ok || userID == "" {
-				// This scenario would only happen if CheckAuth wasn't used, or context wasn't set
+				// This scenario would only happen if AuthMiddleware wasn't used, or context wasn't set
 				http.Error(w, "Missing user in context", http.StatusUnauthorized)
 				return
 			}

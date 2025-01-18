@@ -25,14 +25,15 @@ func RegisterRoutes(
 
 		// Everything here requires a valid JWT token
 		r.Group(func(r chi.Router) {
-			r.Use(httpv1.CheckAuth(log))
+			r.Use(httpv1.AuthMiddleware(log))
 
 			// Create wallet
 			r.Post("/wallet", httpv1.CreateWalletHandler(log, walletService))
 
 			// Access or modify a specific wallet only if user owns it
 			r.Route("/wallet/{id}", func(r chi.Router) {
-				r.Use(httpv1.CheckIfWalletIsOwnedByUser(log, walletService))
+				r.Use(httpv1.WalletOwnershipMiddleware(log, walletService))
+
 				r.Get("/", httpv1.GetWalletHandler(log, walletService))
 				r.Post("/deposit", httpv1.DepositInWalletHandler(log, walletService))
 				r.Post("/withdraw", httpv1.WithdrawFromWalletHandler(log, walletService))
