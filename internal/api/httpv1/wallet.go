@@ -14,7 +14,7 @@ import (
 
 var (
 	ErrInvalidPayload = errors.New("Invalid payload")
-	ErrWalledIDEmpty  = errors.New("Wallet ID is required")
+	ErrWalletIDEmpty  = errors.New("Wallet ID is required")
 )
 
 func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletModule.Wallet, log logger.StructuredLogger) {
@@ -27,8 +27,8 @@ func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletMo
 		UpdatedAt: wallet.UpdatedAt,
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, fmt.Sprintf("Error encoding response: %s", err), http.StatusUnprocessableEntity)
 		log.Error(fmt.Sprintf("Error encoding response: %s", err))
+		http.Error(w, fmt.Sprintf("Error encoding response: %s", err), statusCode)
 	}
 }
 
@@ -42,8 +42,8 @@ func HandleCreateWallet(log logger.StructuredLogger, walletService *walletModule
 		// Call the service to create the wallet
 		err := walletService.CreateWallet(r.Context(), wallet)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error creating wallet: %s", err), http.StatusUnprocessableEntity)
 			log.Error(fmt.Sprintf("Error creating wallet: %s", err))
+			http.Error(w, fmt.Sprintf("Error creating wallet: %s", err), http.StatusUnprocessableEntity)
 			return
 		}
 
@@ -58,8 +58,8 @@ func HandleGetWallet(log logger.StructuredLogger, walletService *walletModule.Wa
 		// Get the wallet ID from the URL
 		id := chi.URLParam(r, "id")
 		if id == "" {
-			http.Error(w, ErrWalledIDEmpty.Error(), http.StatusBadRequest)
-			log.Error(ErrWalledIDEmpty.Error())
+			log.Error(ErrWalletIDEmpty.Error())
+			http.Error(w, ErrWalletIDEmpty.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -68,8 +68,8 @@ func HandleGetWallet(log logger.StructuredLogger, walletService *walletModule.Wa
 		wallet, err := walletService.GetWallet(r.Context(), id)
 
 		if err != nil {
-			http.Error(w, "Wallet not found", http.StatusNotFound)
 			log.Error(fmt.Sprintf("Error getting wallet: %s", err))
+			http.Error(w, "Wallet not found", http.StatusNotFound)
 			return
 		}
 
@@ -86,8 +86,8 @@ func HandleTransactionInWallet(log logger.StructuredLogger, walletService *walle
 		// Get the wallet ID from the URL
 		id := chi.URLParam(r, "id")
 		if id == "" {
-			http.Error(w, ErrWalledIDEmpty.Error(), http.StatusBadRequest)
-			log.Error(ErrWalledIDEmpty.Error())
+			log.Error(ErrWalletIDEmpty.Error())
+			http.Error(w, ErrWalletIDEmpty.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -95,8 +95,8 @@ func HandleTransactionInWallet(log logger.StructuredLogger, walletService *walle
 		var req walletModule.WalletRequest
 		err := json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
-			http.Error(w, ErrInvalidPayload.Error(), http.StatusBadRequest)
 			log.Error(ErrInvalidPayload.Error())
+			http.Error(w, ErrInvalidPayload.Error(), http.StatusBadRequest)
 			return
 		}
 
@@ -118,8 +118,8 @@ func HandleTransactionInWallet(log logger.StructuredLogger, walletService *walle
 		}
 
 		if err != nil {
-			http.Error(w, fmt.Sprintf("Error %s in wallet: %s", req.TransactionType, err), http.StatusUnprocessableEntity)
 			log.Error(fmt.Sprintf("Error %s in wallet: %s", req.TransactionType, err))
+			http.Error(w, fmt.Sprintf("Error %s in wallet: %s", req.TransactionType, err), http.StatusUnprocessableEntity)
 			return
 		}
 

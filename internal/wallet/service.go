@@ -10,7 +10,7 @@ import (
 var (
 	ErrWalletNotFound    = errors.New("Wallet not found")
 	ErrBalanceNegative   = errors.New("Balance cannot be negative")
-	ErrWalledIDEmpty     = errors.New("Wallet ID is empty")
+	ErrWalletIDEmpty     = errors.New("Wallet ID is empty")
 	ErrDepositNegative   = errors.New("Deposit amount must be positive")
 	ErrWithdrawalZero    = errors.New("Withdrawal amount must be positive")
 	ErrInsufficientFunds = errors.New("Insufficient funds")
@@ -39,7 +39,7 @@ func (s *WalletService) CreateWallet(ctx context.Context, wallet *Wallet) error 
 
 func (s *WalletService) GetWallet(ctx context.Context, id string) (*Wallet, error) {
 	if id == "" {
-		return nil, ErrWalledIDEmpty
+		return nil, ErrWalletIDEmpty
 	}
 
 	wallet, err := s.repo.GetWallet(ctx, id)
