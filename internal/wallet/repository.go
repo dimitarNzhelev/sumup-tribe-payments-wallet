@@ -17,29 +17,27 @@ func NewPostgresWalletRepo(db *sql.DB) *PostgresWalletRepo {
 }
 
 type WalletRepo interface {
-	CreateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error)
+	CreateWallet(ctx context.Context, wallet *Wallet) error
 	GetWallet(ctx context.Context, id string) (*Wallet, error)
 	UpdateWallet(ctx context.Context, wallet *Wallet) error
 }
 
-func (r *PostgresWalletRepo) CreateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error) {
+func (r *PostgresWalletRepo) CreateWallet(ctx context.Context, wallet *Wallet) error {
 	// Updated query with RETURNING clause to retrieve the new wallet ID
-	query := `INSERT INTO wallets (balance) VALUES ($1) RETURNING id`
+	query := `INSERT INTO wallets (balance) VALUES ($1) RETURNING id, version, created_at, updated_at`
 
 	// Declare a variable to store the generated wallet ID
 	var walletID string
 
 	// Execute the query and retrieve the new wallet ID
-	err := r.db.QueryRowContext(ctx, query, wallet.Balance).Scan(&walletID)
+	err := r.db.QueryRowContext(ctx, query, 0).Scan(&walletID, &wallet.Version, &wallet.CreatedAt, &wallet.UpdatedAt)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	// Return the newly created wallet
-	return &Wallet{
-		WalletID: uuid.MustParse(walletID),
-		Balance:  wallet.Balance,
-	}, nil
+	wallet.WalletID = uuid.MustParse(walletID)
+
+	return nil
 }
 
 func (r *PostgresWalletRepo) GetWallet(ctx context.Context, id string) (*Wallet, error) {

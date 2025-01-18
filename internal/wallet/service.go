@@ -25,20 +25,16 @@ func NewWalletService(repo WalletRepo, transactionsService *transactions.Transac
 	return &WalletService{repo: repo, transactionsService: transactionsService}
 }
 
-func (s *WalletService) CreateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error) {
+func (s *WalletService) CreateWallet(ctx context.Context, wallet *Wallet) error {
 	if wallet == nil {
-		return nil, ErrWalletNotFound
+		return ErrWalletNotFound
 	}
 
-	if wallet.Balance < 0 {
-		return nil, ErrBalanceNegative
-	}
-
-	wallet, err := s.repo.CreateWallet(ctx, wallet)
+	err := s.repo.CreateWallet(ctx, wallet)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return wallet, nil
+	return nil
 }
 
 func (s *WalletService) GetWallet(ctx context.Context, id string) (*Wallet, error) {

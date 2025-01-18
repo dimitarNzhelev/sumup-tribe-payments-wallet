@@ -36,27 +36,17 @@ func HandleCreateWallet(log logger.StructuredLogger, walletService *walletModule
 		w.Header().Set("Content-Type", "application/json")
 		log.Info("HandleCreateWallet")
 
-		//Get the balance from the request body
-		var req walletModule.WalletRequest
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			http.Error(w, ErrInvalidPayload.Error(), http.StatusBadRequest)
-			return
-		}
-
-		wallet := &walletModule.Wallet{
-			Balance: int64(req.Balance * 100),
-		}
+		wallet := &walletModule.Wallet{}
 
 		// Call the service to create the wallet
-		newWallet, err := walletService.CreateWallet(r.Context(), wallet)
+		err := walletService.CreateWallet(r.Context(), wallet)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error creating wallet: %s", err), http.StatusInternalServerError)
 			return
 		}
 
 		// Use the new function to write the response
-		writeWalletResponse(w, http.StatusCreated, newWallet)
+		writeWalletResponse(w, http.StatusCreated, wallet)
 	}
 }
 
@@ -70,6 +60,8 @@ func HandleGetWallet(log logger.StructuredLogger, walletService *walletModule.Wa
 			http.Error(w, ErrWalledIDEmpty.Error(), http.StatusBadRequest)
 			return
 		}
+
+		log.Info(fmt.Sprintf("HandleGetWallet for wallet ID: %s", id))
 
 		wallet, err := walletService.GetWallet(r.Context(), id)
 
@@ -103,6 +95,8 @@ func HandleTransactionInWallet(log logger.StructuredLogger, walletService *walle
 			http.Error(w, ErrInvalidPayload.Error(), http.StatusBadRequest)
 			return
 		}
+
+		log.Info(fmt.Sprintf("HandleTransactionInWallet for wallet ID: %s, amount: %f, transaction type %s", id, req.Amount, req.TransactionType))
 
 		wallet, err := walletService.GetWallet(r.Context(), id)
 
