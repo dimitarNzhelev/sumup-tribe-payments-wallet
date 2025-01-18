@@ -25,6 +25,8 @@ func HandlerCreateUser(log logger.StructuredLogger, userService *user.UserServic
 			return
 		}
 
+		log.Info(fmt.Sprintf("Creating user with email: %s", req.Email))
+
 		usr := &user.User{
 			Email:        req.Email,
 			PasswordHash: req.Password,
