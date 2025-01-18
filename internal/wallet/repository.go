@@ -17,12 +17,12 @@ func NewPostgresWalletRepo(db *sql.DB) *PostgresWalletRepo {
 }
 
 type WalletRepo interface {
-	CreateWallet(ctx context.Context, wallet *WalletStruct) (*WalletStruct, error)
-	GetWallet(ctx context.Context, id string) (*WalletStruct, error)
-	UpdateWallet(ctx context.Context, wallet *WalletStruct) error
+	CreateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error)
+	GetWallet(ctx context.Context, id string) (*Wallet, error)
+	UpdateWallet(ctx context.Context, wallet *Wallet) error
 }
 
-func (r *PostgresWalletRepo) CreateWallet(ctx context.Context, wallet *WalletStruct) (*WalletStruct, error) {
+func (r *PostgresWalletRepo) CreateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error) {
 	// Updated query with RETURNING clause to retrieve the new wallet ID
 	query := `INSERT INTO wallets (balance) VALUES ($1) RETURNING id`
 
@@ -36,15 +36,15 @@ func (r *PostgresWalletRepo) CreateWallet(ctx context.Context, wallet *WalletStr
 	}
 
 	// Return the newly created wallet
-	return &WalletStruct{
+	return &Wallet{
 		WalletID: uuid.MustParse(walletID),
 		Balance:  wallet.Balance,
 	}, nil
 }
 
-func (r *PostgresWalletRepo) GetWallet(ctx context.Context, id string) (*WalletStruct, error) {
+func (r *PostgresWalletRepo) GetWallet(ctx context.Context, id string) (*Wallet, error) {
 	query := `SELECT * FROM wallets WHERE id = $1`
-	wallet := WalletStruct{}
+	wallet := Wallet{}
 	err := r.db.QueryRowContext(ctx, query, id).Scan(&wallet.WalletID, &wallet.Balance, &wallet.Version, &wallet.CreatedAt, &wallet.UpdatedAt)
 	if err != nil {
 		fmt.Println("Error getting wallet", err)
@@ -53,7 +53,7 @@ func (r *PostgresWalletRepo) GetWallet(ctx context.Context, id string) (*WalletS
 	return &wallet, nil
 }
 
-func (r *PostgresWalletRepo) UpdateWallet(ctx context.Context, wallet *WalletStruct) error {
+func (r *PostgresWalletRepo) UpdateWallet(ctx context.Context, wallet *Wallet) error {
 	// Start a transaction
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{
 		Isolation: sql.LevelReadCommitted, // TODO: Adjust isolation level as needed

@@ -6,7 +6,7 @@ import (
 	"github.com/google/uuid"
 )
 
-type WalletStruct struct {
+type Wallet struct {
 	WalletID  uuid.UUID
 	Balance   int64
 	Version   int

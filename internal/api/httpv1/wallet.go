@@ -17,7 +17,7 @@ var (
 	ErrWalledIDEmpty  = errors.New("Wallet ID is required")
 )
 
-func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletModule.WalletStruct) {
+func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletModule.Wallet) {
 	w.WriteHeader(statusCode)
 	response := walletModule.WalletResponse{
 		WalletID:  wallet.WalletID,
@@ -31,10 +31,10 @@ func writeWalletResponse(w http.ResponseWriter, statusCode int, wallet *walletMo
 	}
 }
 
-func CreateWalletHandler(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
+func HandleCreateWallet(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		log.Info("CreateWalletHandler")
+		log.Info("HandleCreateWallet")
 
 		//Get the balance from the request body
 		var req walletModule.WalletRequest
@@ -44,7 +44,7 @@ func CreateWalletHandler(log logger.StructuredLogger, walletService *walletModul
 			return
 		}
 
-		wallet := &walletModule.WalletStruct{
+		wallet := &walletModule.Wallet{
 			Balance: int64(req.Balance * 100),
 		}
 
@@ -60,7 +60,7 @@ func CreateWalletHandler(log logger.StructuredLogger, walletService *walletModul
 	}
 }
 
-func GetWalletHandler(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
+func HandleGetWallet(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 
@@ -83,7 +83,7 @@ func GetWalletHandler(log logger.StructuredLogger, walletService *walletModule.W
 	}
 }
 
-func TransactionInWalletHandler(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
+func HandleTransactionInWallet(log logger.StructuredLogger, walletService *walletModule.WalletService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 

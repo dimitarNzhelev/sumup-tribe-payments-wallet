@@ -25,7 +25,7 @@ func NewWalletService(repo WalletRepo, transactionsService *transactions.Transac
 	return &WalletService{repo: repo, transactionsService: transactionsService}
 }
 
-func (s *WalletService) CreateWallet(ctx context.Context, wallet *WalletStruct) (*WalletStruct, error) {
+func (s *WalletService) CreateWallet(ctx context.Context, wallet *Wallet) (*Wallet, error) {
 	if wallet == nil {
 		return nil, ErrWalletNotFound
 	}
@@ -41,7 +41,7 @@ func (s *WalletService) CreateWallet(ctx context.Context, wallet *WalletStruct) 
 	return wallet, nil
 }
 
-func (s *WalletService) GetWallet(ctx context.Context, id string) (*WalletStruct, error) {
+func (s *WalletService) GetWallet(ctx context.Context, id string) (*Wallet, error) {
 	if id == "" {
 		return nil, ErrWalledIDEmpty
 	}
@@ -53,7 +53,7 @@ func (s *WalletService) GetWallet(ctx context.Context, id string) (*WalletStruct
 	return wallet, nil
 }
 
-func (s *WalletService) updateWallet(ctx context.Context, wallet *WalletStruct) error {
+func (s *WalletService) updateWallet(ctx context.Context, wallet *Wallet) error {
 	if wallet == nil {
 		return ErrWalletNotFound
 	}
@@ -66,7 +66,7 @@ func (s *WalletService) updateWallet(ctx context.Context, wallet *WalletStruct) 
 	return nil
 }
 
-func (s *WalletService) DepositInWallet(ctx context.Context, money int64, wallet *WalletStruct) error {
+func (s *WalletService) DepositInWallet(ctx context.Context, money int64, wallet *Wallet) error {
 	if money <= 0 {
 		return ErrDepositNegative
 	}
@@ -96,7 +96,7 @@ func (s *WalletService) DepositInWallet(ctx context.Context, money int64, wallet
 	return nil
 }
 
-func (s *WalletService) WithdrawFromWallet(ctx context.Context, money int64, wallet *WalletStruct) error {
+func (s *WalletService) WithdrawFromWallet(ctx context.Context, money int64, wallet *Wallet) error {
 	if wallet == nil {
 		return ErrWalletNotFound
 	}
