@@ -230,16 +230,19 @@ If the transaction is completed successfully the client receives the updated wal
 
 ## Future Improvements  
 
-1. **JWT Authentication**:  
+1. **Unit Tests**:  
+   Writing comprehensive unit tests for the API to ensure each endpoint and feature functions as expected. This includes testing edge cases, error handling, and ensuring the API meets the required specifications. Unit tests will improve code reliability and make future changes easier to implement.
+
+2. **JWT Authentication**:  
    I plan to upgrade the JWT authentication algorithm from **HS256** to **RS256** for improved security using asymmetric encryption.  
 
-2. **Token Management**:  
+3. **Token Management**:  
    I aim to implement two types of tokens:  
    - **Access Token**: A short-lived token for authenticating API requests.  
    - **Refresh Token**: A longer-lived token for securely generating new access tokens without requiring the user to log in again.  
    This improves both security and user experience by limiting token exposure and enabling seamless token renewal.  
 
-3. **Soft Delete for Users**:  
+4. **Soft Delete for Users**:  
    Instead of using `ON DELETE SET NULL` for the `user_id` in the `wallets` table, I plan to implement a **soft delete** mechanism.  
    - Add a `deleted_at` column to the `users` table.  
    - When a user is deleted, instead of removing the record, set the `deleted_at` timestamp.  
