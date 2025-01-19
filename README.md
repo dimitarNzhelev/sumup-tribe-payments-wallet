@@ -8,7 +8,7 @@
 
 ## About  
 
-This project was created as a take-home test for the Junior Software Engineer (Backend) - Payments Tribe role at SumUp. It implements a simple wallet API that allows users to manage their wallets efficiently.  
+This project was created as a take-home test for the Junior Software Engineer (Backend) - Payments Tribe role at SumUp. It implements a simple wallet API that allows users to manage their wallets efficiently. 
 
 ### Features  
 The Wallet API enables users to:  
@@ -19,7 +19,20 @@ The Wallet API enables users to:
 
 Additionally, the API supports user creation and authentication, ensuring that users can only manage their own wallets. Every wallet transaction is securely logged in a transactions table, providing a clear record of all operations.  
 
----
+## Development Process  
+
+I successfully implemented a working solution within **6 hours**. The following **day** was dedicated to refining the code by:  
+
+- Improving data accuracy by replacing the use of **FLOAT** for storing wallet balances. I discovered that floating-point arithmetic can lead to precision issues, so I switched to using **BIGINT**, storing values in cents instead of fractional amounts. This ensures accurate financial calculations and prevents rounding errors. 
+- Enhancing error handling for better stability and maintainability.  
+- Implementing best coding practices to improve code readability.  
+- Fixing identified security vulnerabilities to ensure data protection.  
+- Optimizing the overall structure to support scalability and future enhancements.  
+
+## Database Overview  
+
+The following diagram provides an overview of the database structure. It illustrates the relationships between tables and how data is organized within the system.  
+![Database Chema](db-schema.png)
 
 ## Getting Started  
 
@@ -233,16 +246,19 @@ If the transaction is completed successfully the client receives the updated wal
 1. **Unit Tests**:  
    Writing comprehensive unit tests for the API to ensure each endpoint and feature functions as expected. This includes testing edge cases, error handling, and ensuring the API meets the required specifications. Unit tests will improve code reliability and make future changes easier to implement.
 
-2. **JWT Authentication**:  
+2. **Improved Input Validation**:  
+   Enhancing input validation to ensure that user-provided data meets the required standards for security, correctness, and consistency. This includes implementing stricter validation rules for fields such as email, password, and numeric values.
+
+3. **JWT Authentication**:  
    I plan to upgrade the JWT authentication algorithm from **HS256** to **RS256** for improved security using asymmetric encryption.  
 
-3. **Token Management**:  
+4. **Token Management**:  
    I aim to implement two types of tokens:  
    - **Access Token**: A short-lived token for authenticating API requests.  
    - **Refresh Token**: A longer-lived token for securely generating new access tokens without requiring the user to log in again.  
    This improves both security and user experience by limiting token exposure and enabling seamless token renewal.  
 
-4. **Soft Delete for Users**:  
+5. **Soft Delete for Users**:  
    Instead of using `ON DELETE SET NULL` for the `user_id` in the `wallets` table, I plan to implement a **soft delete** mechanism.  
    - Add a `deleted_at` column to the `users` table.  
    - When a user is deleted, instead of removing the record, set the `deleted_at` timestamp.  
