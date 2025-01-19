@@ -23,4 +23,5 @@ var (
 	ErrGeneratingJWT           = errors.New("Error generating JWT")
 	ErrInvalidClaimsFormat     = errors.New("Invalid claims format")
 	ErrUnexpectedSigningMethod = errors.New("Unexpected signing method")
+	ErrInvalidUserData         = errors.New("Invalid user data")
 )

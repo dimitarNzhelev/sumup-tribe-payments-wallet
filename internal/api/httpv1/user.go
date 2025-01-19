@@ -4,12 +4,23 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"regexp"
 	"tribe-payments-wallet-golang-interview-assignment/internal/auth"
 	"tribe-payments-wallet-golang-interview-assignment/internal/config"
 	"tribe-payments-wallet-golang-interview-assignment/internal/user"
 
 	"github.com/sumup-oss/go-pkgs/logger"
 )
+
+func isValidEmail(email string) bool {
+	re := regexp.MustCompile(`^[^@\s]+@[^@\s]+\.[^@\s]+$`)
+	return re.MatchString(email)
+}
+
+func isValidName(name string) bool {
+	re := regexp.MustCompile(`^[A-Za-z]+$`)
+	return re.MatchString(name)
+}
 
 func HandlerCreateUser(log logger.StructuredLogger, userService *user.UserService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -22,6 +33,11 @@ func HandlerCreateUser(log logger.StructuredLogger, userService *user.UserServic
 		if err != nil {
 			log.Error(config.ErrInvalidRequestPayload.Error())
 			http.Error(w, config.ErrInvalidRequestPayload.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if !isValidEmail(req.Email) || !isValidName(req.FirstName) || !isValidName(req.LastName) {
+			http.Error(w, config.ErrInvalidUserData.Error(), http.StatusBadRequest)
 			return
 		}
 
