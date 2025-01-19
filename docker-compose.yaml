@@ -4,7 +4,7 @@ services:
   postgres-db:
     image: postgres:17
     volumes:
-      - ${PWD}/postgres-db/pgdata:/pgdata
+      - ./postgres-db/pgdata:/pgdata
     ports:
       - 5432:5432
     env_file:
